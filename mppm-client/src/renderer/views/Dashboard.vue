@@ -8,6 +8,16 @@
         <div class="cards">
           <el-card>
             <template #header>
+              <span>账号工作台</span>
+            </template>
+            <p>统一管理多平台账号，支持添加、同步、批量重登。</p>
+            <div class="card-actions">
+              <el-button type="primary" @click="goAccounts">进入账号管理</el-button>
+            </div>
+          </el-card>
+
+          <el-card>
+            <template #header>
               <span>内容管理</span>
             </template>
             <p>管理和编辑多平台发布内容，支持草稿、发布、归档状态。</p>
@@ -37,6 +47,10 @@ onMounted(() => {
 
 const goContent = () => {
   router.push('/contents')
+}
+
+const goAccounts = () => {
+  router.push('/accounts')
 }
 
 const handleSync = async () => {

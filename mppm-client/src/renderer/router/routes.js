@@ -20,6 +20,12 @@ export const routes = [
     name: 'ContentList',
     component: () => import('../views/Content/ContentList.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/accounts',
+    name: 'AccountManager',
+    component: () => import('../views/Accounts/AccountManager.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 
