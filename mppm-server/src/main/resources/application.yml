@@ -6,7 +6,7 @@ spring:
     active: dev
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/mppm
+    url: jdbc:postgresql://192.168.56.4:5432/postgres
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -31,7 +31,7 @@ spring:
   
   data:
     redis:
-      host: localhost
+      host: 192.168.56.4
       port: 6379
       password: 
       database: 0

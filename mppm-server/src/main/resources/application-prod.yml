@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/mppm}
+    url: ${DB_URL:jdbc:postgresql://192.168.56.4:5432/postgres}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    password: ${DB_PASSWORD:123456}
   
   jpa:
     show-sql: false
