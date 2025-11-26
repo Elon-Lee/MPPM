@@ -53,7 +53,7 @@
         <el-button type="primary" @click="openCreate">添加账号</el-button>
       </div>
       <div v-else class="account-table">
-        <el-table :data="filteredAccounts" stripe>
+        <el-table :data="filteredAccounts" stripe :virtualized="true">
           <el-table-column label="平台" prop="platformDisplayName" width="140" />
           <el-table-column label="账号名称" prop="accountName" min-width="160" />
           <el-table-column label="状态" prop="status" width="120">
@@ -120,7 +120,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import dayjs from 'dayjs'
 import {
   Monitor,
@@ -135,6 +135,7 @@ import {
 } from '@element-plus/icons-vue'
 import { useAccountStore } from '@/store/modules/account'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useDebounce } from '@/composables/useDebounce'
 
 const accountStore = useAccountStore()
 const activeTab = ref('accounts')
@@ -163,11 +164,21 @@ onMounted(() => {
   accountStore.fetchAccounts()
 })
 
+const debouncedPlatform = useDebounce(platformFilter, 200)
+const debouncedKeyword = useDebounce(keyword, 300)
+
+watch([debouncedPlatform, debouncedKeyword], () => {
+  accountStore.fetchAccounts({
+    platformId: debouncedPlatform.value ? Number(debouncedPlatform.value) : undefined,
+    keyword: debouncedKeyword.value || undefined
+  })
+})
+
 const filteredAccounts = computed(() => {
-  const platformValue = platformFilter.value ? Number(platformFilter.value) : null
+  const platformValue = debouncedPlatform.value ? Number(debouncedPlatform.value) : null
   return accountStore.list.filter((item) => {
     const platformMatch = platformValue ? item.platformId === platformValue : true
-    const keywordMatch = keyword.value ? item.accountName?.includes(keyword.value) : true
+    const keywordMatch = debouncedKeyword.value ? item.accountName?.includes(debouncedKeyword.value) : true
     return platformMatch && keywordMatch
   })
 })

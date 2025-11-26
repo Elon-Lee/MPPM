@@ -10,7 +10,8 @@
     "pack": "electron-builder",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac"
+    "dist:mac": "npm run build && electron-builder --mac",
+    "lint": "eslint \"src/**/*.{js,vue}\" --max-warnings=0"
   },
   "dependencies": {
     "vue": "^3.3.4",
@@ -33,7 +34,13 @@
     "electron-builder": "^24.9.1",
     "@vitejs/plugin-vue": "^4.5.2",
     "vite": "^5.0.8",
-    "sass": "^1.69.5"
+    "sass": "^1.69.5",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.19.2",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-config-prettier": "^9.1.0"
   },
   "build": {
     "appId": "com.mppm.client",

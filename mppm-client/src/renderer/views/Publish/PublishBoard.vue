@@ -54,7 +54,7 @@
         </div>
       </template>
 
-      <el-table :data="filteredTasks" v-loading="publishStore.loading" stripe>
+      <el-table :data="filteredTasks" v-loading="publishStore.loading" stripe :virtualized="true">
         <el-table-column prop="id" label="任务ID" width="100" />
         <el-table-column prop="platformName" label="平台" width="140" />
         <el-table-column prop="status" label="状态" width="120">
@@ -128,10 +128,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import dayjs from 'dayjs'
 import { usePublishStore } from '@/store/modules/publish'
 import { useAccountStore } from '@/store/modules/account'
+import { useDebounce } from '@/composables/useDebounce'
 
 const publishStore = usePublishStore()
 const accountStore = useAccountStore()
@@ -163,16 +164,28 @@ onMounted(() => {
   publishStore.fetchTasks()
 })
 
+const debouncedStatus = useDebounce(statusFilter, 200)
+const debouncedPlatform = useDebounce(platformFilter, 200)
+const debouncedKeyword = useDebounce(keyword, 300)
+
+watch([debouncedStatus, debouncedPlatform, debouncedKeyword], () => {
+  publishStore.fetchTasks({
+    status: debouncedStatus.value || undefined,
+    platformId: debouncedPlatform.value ? Number(debouncedPlatform.value) : undefined,
+    keyword: debouncedKeyword.value || undefined
+  })
+})
+
 const filteredTasks = computed(() => {
   return publishStore.tasks.filter((task) => {
-    const statusMatch = statusFilter.value ? task.status === statusFilter.value : true
-    const platformMatch = platformFilter.value
-      ? task.platformId === Number(platformFilter.value)
+    const statusMatch = debouncedStatus.value ? task.status === debouncedStatus.value : true
+    const platformMatch = debouncedPlatform.value
+      ? task.platformId === Number(debouncedPlatform.value)
       : true
-    const keywordMatch = keyword.value
-      ? `${task.id}`.includes(keyword.value) ||
-        task.platformName?.includes(keyword.value) ||
-        task.publishUrl?.includes(keyword.value)
+    const keywordMatch = debouncedKeyword.value
+      ? `${task.id}`.includes(debouncedKeyword.value) ||
+        task.platformName?.includes(debouncedKeyword.value) ||
+        task.publishUrl?.includes(debouncedKeyword.value)
       : true
     return statusMatch && platformMatch && keywordMatch
   })
@@ -213,8 +226,9 @@ const statusLabel = (status) => {
 const handlePageChange = (page) => {
   publishStore.fetchTasks({
     page,
-    status: statusFilter.value,
-    platformId: platformFilter.value
+    status: debouncedStatus.value || undefined,
+    platformId: debouncedPlatform.value ? Number(debouncedPlatform.value) : undefined,
+    keyword: debouncedKeyword.value || undefined
   })
 }
 
