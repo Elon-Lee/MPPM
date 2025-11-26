@@ -2,6 +2,8 @@ package com.mppm.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -22,6 +24,7 @@ public class Platform {
     @Column(name = "display_name", length = 100)
     private String displayName;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "config_schema", columnDefinition = "jsonb")
     private String configSchema;
 

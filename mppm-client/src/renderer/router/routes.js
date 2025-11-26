@@ -26,6 +26,12 @@ export const routes = [
     name: 'AccountManager',
     component: () => import('../views/Accounts/AccountManager.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/publish',
+    name: 'PublishBoard',
+    component: () => import('../views/Publish/PublishBoard.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

@@ -18,6 +18,16 @@
 
           <el-card>
             <template #header>
+              <span>发布中心</span>
+            </template>
+            <p>集中管理发布任务，跟踪多平台成功率和异常。</p>
+            <div class="card-actions">
+              <el-button type="primary" @click="goPublish">进入发布中心</el-button>
+            </div>
+          </el-card>
+
+          <el-card>
+            <template #header>
               <span>内容管理</span>
             </template>
             <p>管理和编辑多平台发布内容，支持草稿、发布、归档状态。</p>
@@ -51,6 +61,10 @@ const goContent = () => {
 
 const goAccounts = () => {
   router.push('/accounts')
+}
+
+const goPublish = () => {
+  router.push('/publish')
 }
 
 const handleSync = async () => {
