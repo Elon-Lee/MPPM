@@ -3,6 +3,7 @@ import { authAPI } from '@/services/api/auth'
 import { ElMessage } from 'element-plus'
 import { tokenService } from '@/services/auth/tokenService'
 import { userRepository } from '@/services/storage/database'
+import { syncEngine } from '@/services/sync/syncEngine'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -67,6 +68,7 @@ export const useAuthStore = defineStore('auth', {
         }
 
         ElMessage.success('登录成功')
+        syncEngine.syncContents().catch((err) => console.error('Initial sync failed', err))
         return true
       } catch (error) {
         ElMessage.error(error.message || '登录失败')
@@ -175,6 +177,7 @@ export const useAuthStore = defineStore('auth', {
             // Token 已过期，尝试刷新
             await this.refreshAccessToken()
           }
+          syncEngine.syncContents().catch((err) => console.error('Sync failed', err))
         }
       } catch (error) {
         console.error('Failed to restore user:', error)

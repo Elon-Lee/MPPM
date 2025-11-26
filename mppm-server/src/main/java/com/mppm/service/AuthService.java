@@ -100,15 +100,23 @@ public class AuthService {
         response.setRefreshToken(refreshToken);
         response.setExpiresIn(jwtConfig.getAccessTokenExpiration() / 1000);
 
+        response.setUser(toUserInfo(user));
+        response.setUser(toUserInfo(user));
+
+        return response;
+    }
+
+    private AuthResponse.UserInfo toUserInfo(User user) {
         AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo();
         userInfo.setId(user.getId());
         userInfo.setUsername(user.getUsername());
         userInfo.setEmail(user.getEmail());
         userInfo.setNickname(user.getNickname());
         userInfo.setAvatarUrl(user.getAvatarUrl());
-        response.setUser(userInfo);
-
-        return response;
+        userInfo.setRoles(user.getRoles().stream()
+            .map(role -> role.getCode())
+            .toList());
+        return userInfo;
     }
 }
 

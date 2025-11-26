@@ -63,8 +63,22 @@ export const contentRepository = {
     return invoke(getElectronAPI().db.content.findByLocalId, localId)
   },
 
+  async findByServerId(serverId) {
+    return invoke(getElectronAPI().db.content.findByServerId, serverId)
+  },
+
   async findByUserId(userId, options) {
     return invoke(getElectronAPI().db.content.findByUserId, userId, options)
+  },
+
+  async updateSyncInfo(localId, serverId, version, lastSyncAt) {
+    return invoke(
+      getElectronAPI().db.content.updateSyncInfo,
+      localId,
+      serverId,
+      version,
+      lastSyncAt
+    )
   },
 
   async remove(localId) {

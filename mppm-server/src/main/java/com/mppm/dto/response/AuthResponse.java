@@ -2,6 +2,8 @@ package com.mppm.dto.response;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class AuthResponse {
     private String accessToken;
@@ -16,6 +18,7 @@ public class AuthResponse {
         private String email;
         private String nickname;
         private String avatarUrl;
+        private List<String> roles;
     }
 }
 
