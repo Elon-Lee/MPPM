@@ -10,6 +10,6 @@ import org.springframework.context.annotation.Configuration;
 public class JwtConfig {
     private String secret = "your-secret-key-change-in-production-min-256-bits";
     private Long accessTokenExpiration = 3600000L; // 1 hour
-    private Long refreshTokenExpiration = 604800000L; // 7 days
+    private Long refreshTokenExpiration = 604800000L / 1000 ; // 7 days
 }
 

@@ -21,8 +21,8 @@ export const authAPI = {
   /**
    * 登出
    */
-  logout: () => {
-    return apiClient.post('/auth/logout')
+  logout: (refreshToken) => {
+    return apiClient.post('/auth/logout', { refreshToken })
   }
 }
 

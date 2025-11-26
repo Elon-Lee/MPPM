@@ -1,6 +1,7 @@
 package com.mppm.controller;
 
 import com.mppm.dto.request.LoginRequest;
+import com.mppm.dto.request.RefreshTokenRequest;
 import com.mppm.dto.response.ApiResponse;
 import com.mppm.dto.response.AuthResponse;
 import com.mppm.service.AuthService;
@@ -27,6 +28,24 @@ public class AuthController {
         } catch (RuntimeException e) {
             return ApiResponse.error(401, e.getMessage());
         }
+    }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "刷新 Token", description = "使用 Refresh Token 换取新的 Access Token")
+    public ApiResponse<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        try {
+            AuthResponse response = authService.refreshToken(request);
+            return ApiResponse.success(response);
+        } catch (RuntimeException e) {
+            return ApiResponse.error(401, e.getMessage());
+        }
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "登出", description = "注销当前刷新令牌")
+    public ApiResponse<Boolean> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request);
+        return ApiResponse.success("logout success", true);
     }
 }
 

@@ -1,13 +1,16 @@
 import { defineStore } from 'pinia'
 import { authAPI } from '@/services/api/auth'
 import { ElMessage } from 'element-plus'
+import { tokenService } from '@/services/auth/tokenService'
+import { userRepository } from '@/services/storage/database'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    accessToken: localStorage.getItem('accessToken') || null,
-    refreshToken: localStorage.getItem('refreshToken') || null,
-    isAuthenticated: false
+    accessToken: tokenService.getAccessToken(),
+    refreshToken: tokenService.getRefreshToken(),
+    isAuthenticated: false,
+    _tokenUnsubscribe: null
   }),
 
   getters: {
@@ -16,10 +19,25 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
+    initTokenWatcher() {
+      if (this._tokenUnsubscribe || typeof window === 'undefined') {
+        return
+      }
+      this._tokenUnsubscribe = tokenService.subscribe(({ accessToken, refreshToken }) => {
+        this.accessToken = accessToken
+        this.refreshToken = refreshToken
+        if (!accessToken) {
+          this.isAuthenticated = false
+        }
+      })
+    },
+
     /**
      * 登录
      */
     async login(username, password) {
+      this.initTokenWatcher()
+
       try {
         const response = await authAPI.login(username, password)
         
@@ -29,12 +47,14 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = true
 
         // 保存到本地存储
-        localStorage.setItem('accessToken', response.accessToken)
-        localStorage.setItem('refreshToken', response.refreshToken)
+        tokenService.setTokens({
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken
+        })
         
         // 保存到本地数据库
-        if (window.electronAPI) {
-          await window.electronAPI.db.user.upsert({
+        if (userRepository.isAvailable()) {
+          await userRepository.upsert({
             userId: response.user.id.toString(),
             username: response.user.username,
             email: response.user.email,
@@ -58,9 +78,14 @@ export const useAuthStore = defineStore('auth', {
      * 登出
      */
     async logout() {
+      this.initTokenWatcher()
+
+      const currentUserId = this.user?.id
+      const refreshToken = this.refreshToken
+
       try {
-        if (this.accessToken) {
-          await authAPI.logout()
+        if (refreshToken) {
+          await authAPI.logout(refreshToken)
         }
       } catch (error) {
         console.error('Logout error:', error)
@@ -72,12 +97,11 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = false
 
         // 清除本地存储
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
+        tokenService.clearTokens()
 
         // 清除本地数据库
-        if (window.electronAPI && this.user) {
-          await window.electronAPI.db.user.delete(this.user.id.toString())
+        if (userRepository.isAvailable() && currentUserId) {
+          await userRepository.delete(currentUserId.toString())
         }
       }
     },
@@ -86,6 +110,8 @@ export const useAuthStore = defineStore('auth', {
      * 刷新 Token
      */
     async refreshAccessToken() {
+      this.initTokenWatcher()
+
       if (!this.refreshToken) {
         throw new Error('No refresh token available')
       }
@@ -93,11 +119,15 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await authAPI.refreshToken(this.refreshToken)
         this.accessToken = response.accessToken
-        localStorage.setItem('accessToken', response.accessToken)
+        this.refreshToken = response.refreshToken ?? this.refreshToken
+        tokenService.setTokens({
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken ?? this.refreshToken
+        })
 
         // 更新本地数据库
-        if (window.electronAPI && this.user) {
-          await window.electronAPI.db.user.updateToken(
+        if (userRepository.isAvailable() && this.user) {
+          await userRepository.updateToken(
             this.user.id.toString(),
             response.accessToken,
             this.refreshToken,
@@ -117,12 +147,13 @@ export const useAuthStore = defineStore('auth', {
      * 从本地数据库恢复用户信息
      */
     async restoreUser() {
-      if (!window.electronAPI) return
+      this.initTokenWatcher()
+
+      if (!userRepository.isAvailable()) return
 
       try {
-        const result = await window.electronAPI.db.user.getCurrent()
-        if (result.success && result.data) {
-          const userData = result.data
+        const userData = await userRepository.getCurrent()
+        if (userData) {
           this.user = {
             id: userData.user_id,
             username: userData.username,
@@ -133,6 +164,11 @@ export const useAuthStore = defineStore('auth', {
           this.accessToken = userData.access_token
           this.refreshToken = userData.refresh_token
           this.isAuthenticated = true
+
+          tokenService.setTokens({
+            accessToken: userData.access_token,
+            refreshToken: userData.refresh_token
+          })
 
           // 检查 Token 是否过期
           if (userData.token_expires_at && userData.token_expires_at < Date.now()) {
