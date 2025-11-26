@@ -1,5 +1,6 @@
 package com.mppm.service;
 
+import com.mppm.dto.request.sync.SyncConflictResolveRequest;
 import com.mppm.dto.request.sync.SyncDownloadRequest;
 import com.mppm.dto.request.sync.SyncEntityRequest;
 import com.mppm.dto.request.sync.SyncUploadRequest;
@@ -87,6 +88,7 @@ public class SyncService {
                     .serverVersion(content.getVersion())
                     .conflictType("VERSION_MISMATCH")
                     .message("存在版本冲突")
+                    .serverData(contentService.toResponse(content))
                     .build());
                 return;
             }
@@ -148,6 +150,38 @@ public class SyncService {
             .entities(responses)
             .deleted(List.of())
             .serverTime(Instant.now().toString())
+            .build();
+    }
+
+    @Transactional
+    public SyncResult resolveConflict(Long userId, SyncConflictResolveRequest request) {
+        Content content = contentRepository.findByIdAndUserId(request.getServerId(), userId)
+            .orElseThrow(() -> new RuntimeException("内容不存在"));
+
+        if ("USE_SERVER".equalsIgnoreCase(request.getResolution())) {
+            return SyncResult.builder()
+                .localId(request.getLocalId())
+                .serverId(content.getId())
+                .version(content.getVersion())
+                .build();
+        }
+
+        if (request.getMergedData() == null) {
+            throw new RuntimeException("缺少合并后的数据");
+        }
+
+        content.setTitle(request.getMergedData().getTitle());
+        content.setContent(request.getMergedData().getContent());
+        content.setContentType(request.getMergedData().getContentType());
+        content.setStatus(request.getMergedData().getStatus());
+        content.setVersion(content.getVersion() + 1);
+        content.setLastSyncAt(LocalDateTime.now());
+        Content saved = contentRepository.save(content);
+
+        return SyncResult.builder()
+            .localId(request.getLocalId())
+            .serverId(saved.getId())
+            .version(saved.getVersion())
             .build();
     }
 }

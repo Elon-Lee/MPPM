@@ -99,6 +99,15 @@ export function handleDatabase() {
     }
   })
 
+  ipcMain.handle(IPC_CHANNELS.DB_CONTENT_FIND_DIRTY, async (event, userId) => {
+    try {
+      const contents = ContentModel.findDirty(userId)
+      return { success: true, data: contents }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
+
   ipcMain.handle(IPC_CHANNELS.DB_CONTENT_DELETE, async (event, localId) => {
     try {
       const result = ContentModel.delete(localId)

@@ -1,5 +1,6 @@
 package com.mppm.dto.response.sync;
 
+import com.mppm.dto.response.ContentResponse;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,5 +13,6 @@ public class SyncConflict {
     private Integer serverVersion;
     private String conflictType;
     private String message;
+    private ContentResponse serverData;
 }
 

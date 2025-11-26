@@ -71,6 +71,10 @@ export const contentRepository = {
     return invoke(getElectronAPI().db.content.findByUserId, userId, options)
   },
 
+  async findDirty(userId) {
+    return invoke(getElectronAPI().db.content.findDirty, userId)
+  },
+
   async updateSyncInfo(localId, serverId, version, lastSyncAt) {
     return invoke(
       getElectronAPI().db.content.updateSyncInfo,

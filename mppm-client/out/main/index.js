@@ -234,6 +234,7 @@ const IPC_CHANNELS = {
   DB_CONTENT_FIND_BY_LOCAL_ID: "db:content:findByLocalId",
   DB_CONTENT_FIND_BY_SERVER_ID: "db:content:findByServerId",
   DB_CONTENT_FIND_BY_USER_ID: "db:content:findByUserId",
+  DB_CONTENT_FIND_DIRTY: "db:content:findDirty",
   DB_CONTENT_DELETE: "db:content:delete",
   DB_CONTENT_UPDATE_SYNC_INFO: "db:content:updateSyncInfo",
   // 加密操作
@@ -365,6 +366,18 @@ class ContentModel {
     return stmt.all(...params);
   }
   /**
+   * 查找待同步内容
+   */
+  static findDirty(userId) {
+    const db2 = getDatabase();
+    const stmt = db2.prepare(`
+      SELECT * FROM contents
+      WHERE user_id = ?
+      AND (last_sync_at IS NULL OR updated_at > last_sync_at)
+    `);
+    return stmt.all(userId);
+  }
+  /**
    * 删除内容
    */
   static delete(localId) {
@@ -461,6 +474,14 @@ function handleDatabase() {
   electron.ipcMain.handle(IPC_CHANNELS.DB_CONTENT_FIND_BY_USER_ID, async (event, userId, options) => {
     try {
       const contents = ContentModel.findByUserId(userId, options);
+      return { success: true, data: contents };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+  electron.ipcMain.handle(IPC_CHANNELS.DB_CONTENT_FIND_DIRTY, async (event, userId) => {
+    try {
+      const contents = ContentModel.findDirty(userId);
       return { success: true, data: contents };
     } catch (error) {
       return { success: false, error: error.message };

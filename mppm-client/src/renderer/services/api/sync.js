@@ -7,6 +7,10 @@ export const syncAPI = {
 
   download(payload) {
     return apiClient.post('/sync/download', payload)
+  },
+
+  resolveConflict(payload) {
+    return apiClient.post('/sync/resolve-conflict', payload)
   }
 }
 

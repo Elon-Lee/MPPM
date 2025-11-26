@@ -76,6 +76,19 @@ export class ContentModel {
   }
 
   /**
+   * 查找待同步内容
+   */
+  static findDirty(userId) {
+    const db = getDatabase()
+    const stmt = db.prepare(`
+      SELECT * FROM contents
+      WHERE user_id = ?
+      AND (last_sync_at IS NULL OR updated_at > last_sync_at)
+    `)
+    return stmt.all(userId)
+  }
+
+  /**
    * 删除内容
    */
   static delete(localId) {

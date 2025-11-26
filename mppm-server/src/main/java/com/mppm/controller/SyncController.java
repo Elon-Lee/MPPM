@@ -1,9 +1,11 @@
 package com.mppm.controller;
 
+import com.mppm.dto.request.sync.SyncConflictResolveRequest;
 import com.mppm.dto.request.sync.SyncDownloadRequest;
 import com.mppm.dto.request.sync.SyncUploadRequest;
 import com.mppm.dto.response.ApiResponse;
 import com.mppm.dto.response.sync.SyncDownloadResponse;
+import com.mppm.dto.response.sync.SyncResult;
 import com.mppm.dto.response.sync.SyncUploadResponse;
 import com.mppm.security.SecurityUtils;
 import com.mppm.service.SyncService;
@@ -36,6 +38,13 @@ public class SyncController {
     public ApiResponse<SyncDownloadResponse> download(@Valid @RequestBody SyncDownloadRequest request) {
         Long userId = requireUserId();
         return ApiResponse.success(syncService.download(userId, request));
+    }
+
+    @PostMapping("/resolve-conflict")
+    @Operation(summary = "解决同步冲突")
+    public ApiResponse<SyncResult> resolveConflict(@Valid @RequestBody SyncConflictResolveRequest request) {
+        Long userId = requireUserId();
+        return ApiResponse.success(syncService.resolveConflict(userId, request));
     }
 
     private Long requireUserId() {

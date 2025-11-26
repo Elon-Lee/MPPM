@@ -14,6 +14,7 @@ export const IPC_CHANNELS = {
   DB_CONTENT_FIND_BY_LOCAL_ID: 'db:content:findByLocalId',
   DB_CONTENT_FIND_BY_SERVER_ID: 'db:content:findByServerId',
   DB_CONTENT_FIND_BY_USER_ID: 'db:content:findByUserId',
+  DB_CONTENT_FIND_DIRTY: 'db:content:findDirty',
   DB_CONTENT_DELETE: 'db:content:delete',
   DB_CONTENT_UPDATE_SYNC_INFO: 'db:content:updateSyncInfo',
   
