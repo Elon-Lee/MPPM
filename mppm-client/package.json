@@ -2,7 +2,7 @@
   "name": "mppm-client",
   "version": "1.0.0",
   "description": "新媒体多平台发布桌面客户端",
-  "main": ".electron-vue/main.js",
+  "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
@@ -21,6 +21,7 @@
     "@element-plus/icons-vue": "^2.3.1",
     "better-sqlite3": "^9.2.2",
     "keytar": "^7.9.0",
+    "@electron-toolkit/utils": "^2.0.1",
     "puppeteer": "^21.6.1",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
