@@ -39,7 +39,8 @@ function createMainWindow() {
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     frame: true,
     webPreferences: {
-      preload: path.join(__dirname, "../../preload/index.js"),
+      // Dev: out/preload/index.js; Prod: dist-electron/preload/index.js (within asar)
+      preload: utils.is.dev ? path.join(electron.app.getAppPath(), "out/preload/index.js") : path.join(__dirname, "../../preload/index.js"),
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
@@ -245,7 +246,8 @@ const IPC_CHANNELS = {
   // 系统操作
   SYSTEM_GET_VERSION: "system:getVersion",
   SYSTEM_GET_PLATFORM: "system:getPlatform",
-  SYSTEM_SHOW_NOTIFICATION: "system:showNotification"
+  SYSTEM_SHOW_NOTIFICATION: "system:showNotification",
+  PLATFORM_OPEN_LOGIN_WINDOW: "platform:openLoginWindow"
 };
 class UserModel {
   /**
@@ -656,10 +658,81 @@ function handleSystem() {
     return { success: false, error: "Notifications not supported" };
   });
 }
+const windows = /* @__PURE__ */ new Map();
+function openLoginWindow({ url, partitionKey, successPatterns = [], eventSender, platformId }) {
+  const key = partitionKey || `platform-login-${Date.now()}`;
+  const ses = electron.session.fromPartition(`persist:${key}`);
+  const initialUrl = url;
+  let hasNavigatedAway = false;
+  const win = new electron.BrowserWindow({
+    width: 1200,
+    height: 800,
+    show: true,
+    webPreferences: {
+      session: ses,
+      // Dev: out/preload/index.js; Prod: dist-electron/preload/index.js
+      preload: utils.is.dev ? path.join(electron.app.getAppPath(), "out/preload/index.js") : path.join(__dirname, "../../preload/index.js"),
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+  windows.set(key, win);
+  win.on("closed", () => {
+    windows.delete(key);
+  });
+  const isSuccess = (targetUrl) => {
+    if (!hasNavigatedAway) {
+      return false;
+    }
+    if (!targetUrl || targetUrl === initialUrl) {
+      return false;
+    }
+    if (successPatterns && successPatterns.length > 0) {
+      return successPatterns.some((p) => targetUrl.includes(p));
+    }
+    return !targetUrl.includes("passport.weibo.com");
+  };
+  win.webContents.on("did-navigate", (_event, targetUrl) => {
+    if (targetUrl && targetUrl !== initialUrl) {
+      hasNavigatedAway = true;
+    }
+    if (isSuccess(targetUrl)) {
+      if (eventSender) {
+        eventSender.send("platform:loginSuccess", { platformId, url: targetUrl });
+      }
+      if (!win.isDestroyed()) {
+        win.close();
+      }
+    }
+  });
+  win.loadURL(url);
+  return { key };
+}
+function handlePlatformLogin() {
+  electron.ipcMain.handle(IPC_CHANNELS.PLATFORM_OPEN_LOGIN_WINDOW, async (event, payload) => {
+    const { url, partitionKey, successPatterns, platformId } = payload || {};
+    if (!url) {
+      return { success: false, error: "login url is required" };
+    }
+    try {
+      const result = openLoginWindow({
+        url,
+        partitionKey,
+        successPatterns,
+        platformId,
+        eventSender: event.sender
+      });
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+}
 function initIpcHandlers() {
   handleDatabase();
   handleCrypto();
   handleSystem();
+  handlePlatformLogin();
   console.log("IPC handlers initialized");
 }
 let tray = null;

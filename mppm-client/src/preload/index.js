@@ -40,6 +40,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getVersion: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_VERSION),
     getPlatform: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_PLATFORM),
     showNotification: (options) => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHOW_NOTIFICATION, options)
+  },
+
+  platform: {
+    openLoginWindow: (payload) => ipcRenderer.invoke(IPC_CHANNELS.PLATFORM_OPEN_LOGIN_WINDOW, payload),
+    onLoginSuccess: (callback) => {
+      const listener = (_event, data) => callback?.(data)
+      ipcRenderer.on(IPC_CHANNELS.PLATFORM_LOGIN_SUCCESS, listener)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.PLATFORM_LOGIN_SUCCESS, listener)
+    }
   }
 })
 

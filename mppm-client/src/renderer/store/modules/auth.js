@@ -10,7 +10,8 @@ export const useAuthStore = defineStore('auth', {
     user: null,
     accessToken: tokenService.getAccessToken(),
     refreshToken: tokenService.getRefreshToken(),
-    isAuthenticated: false,
+    // 初始根据本地 token 判定，以避免刷新后直接被路由重定向到登录页
+    isAuthenticated: !!tokenService.getAccessToken(),
     _tokenUnsubscribe: null
   }),
 
@@ -178,6 +179,9 @@ export const useAuthStore = defineStore('auth', {
             await this.refreshAccessToken()
           }
           syncEngine.syncContents().catch((err) => console.error('Sync failed', err))
+        } else if (this.accessToken) {
+          // 没有查询到用户但本地仍有 token，保持登录状态，等待后续接口获取用户信息
+          this.isAuthenticated = true
         }
       } catch (error) {
         console.error('Failed to restore user:', error)

@@ -24,6 +24,15 @@ public class Platform {
     @Column(name = "display_name", length = 100)
     private String displayName;
 
+    @Column(name = "icon_url", length = 255)
+    private String iconUrl;
+
+    @Column(name = "login_url", length = 255)
+    private String loginUrl;
+
+    @Column(name = "home_url", length = 255)
+    private String homeUrl;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "config_schema", columnDefinition = "jsonb")
     private String configSchema;

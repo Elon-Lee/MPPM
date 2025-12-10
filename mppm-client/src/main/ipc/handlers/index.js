@@ -3,6 +3,7 @@ import { IPC_CHANNELS } from '../channels'
 import { handleDatabase } from './database'
 import { handleCrypto } from './crypto'
 import { handleSystem } from './system'
+import { handlePlatformLogin } from './platform'
 
 /**
  * 初始化所有 IPC 处理器
@@ -16,6 +17,9 @@ export function initIpcHandlers() {
   
   // 注册系统处理器
   handleSystem()
+
+  // 平台登录窗口
+  handlePlatformLogin()
   
   console.log('IPC handlers initialized')
 }

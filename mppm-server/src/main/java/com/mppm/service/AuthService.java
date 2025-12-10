@@ -5,6 +5,7 @@ import com.mppm.dto.request.LoginRequest;
 import com.mppm.dto.request.RefreshTokenRequest;
 import com.mppm.dto.response.AuthResponse;
 import com.mppm.entity.RefreshToken;
+import com.mppm.entity.Role;
 import com.mppm.entity.User;
 import com.mppm.repository.RefreshTokenRepository;
 import com.mppm.repository.UserRepository;
@@ -114,7 +115,7 @@ public class AuthService {
         userInfo.setNickname(user.getNickname());
         userInfo.setAvatarUrl(user.getAvatarUrl());
         userInfo.setRoles(user.getRoles().stream()
-            .map(role -> role.getCode())
+            .map(Role::getCode)
             .toList());
         return userInfo;
     }

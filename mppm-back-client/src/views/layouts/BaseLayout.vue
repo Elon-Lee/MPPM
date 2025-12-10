@@ -7,6 +7,10 @@
           <el-icon><User /></el-icon>
           <span>用户管理</span>
         </el-menu-item>
+        <el-menu-item index="/platforms">
+          <el-icon><Monitor /></el-icon>
+          <span>平台管理</span>
+        </el-menu-item>
       </el-menu>
     </aside>
     <div class="main">
@@ -26,7 +30,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/modules/auth'
-import { User } from '@element-plus/icons-vue'
+import { User, Monitor } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

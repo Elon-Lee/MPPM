@@ -1,0 +1,3 @@
+ALTER TABLE platforms
+    ADD COLUMN IF NOT EXISTS home_url VARCHAR(255);
+

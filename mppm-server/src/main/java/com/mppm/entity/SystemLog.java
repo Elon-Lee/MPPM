@@ -2,6 +2,8 @@ package com.mppm.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -31,6 +33,7 @@ public class SystemLog {
     @Column(name = "stack_trace", columnDefinition = "text")
     private String stackTrace;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "client_info", columnDefinition = "jsonb")
     private String clientInfo;
 

@@ -28,6 +28,8 @@ export const IPC_CHANNELS = {
   SYSTEM_GET_VERSION: 'system:getVersion',
   SYSTEM_GET_PLATFORM: 'system:getPlatform',
   SYSTEM_SHOW_NOTIFICATION: 'system:showNotification',
+  PLATFORM_OPEN_LOGIN_WINDOW: 'platform:openLoginWindow',
+  PLATFORM_LOGIN_SUCCESS: 'platform:loginSuccess',
   
   // 窗口操作
   WINDOW_MINIMIZE: 'window:minimize',

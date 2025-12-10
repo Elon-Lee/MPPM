@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 
@@ -23,7 +23,10 @@ export function createMainWindow() {
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     frame: true,
     webPreferences: {
-      preload: join(__dirname, '../../preload/index.js'),
+      // Dev: out/preload/index.js; Prod: dist-electron/preload/index.js (within asar)
+      preload: is.dev
+        ? join(app.getAppPath(), 'out/preload/index.js')
+        : join(__dirname, '../../preload/index.js'),
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,

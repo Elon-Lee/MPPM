@@ -9,6 +9,9 @@ public class PlatformResponse {
     private Long id;
     private String name;
     private String displayName;
+    private String iconUrl;
+    private String loginUrl;
+    private String homeUrl;
     private Boolean enabled;
 }
 

@@ -32,7 +32,7 @@
         <el-select v-model="platformFilter" placeholder="全部平台" clearable>
           <el-option label="全部平台" value="" />
           <el-option
-            v-for="platform in accountStore.platforms"
+            v-for="platform in availablePlatforms"
             :key="platform.id"
             :label="platform.displayName || platform.name"
             :value="platform.id"
@@ -47,74 +47,69 @@
       </div>
     </div>
 
-    <div class="content-card">
-      <div v-if="accountStore.list.length === 0" class="empty-state">
-        <el-empty description="您还没有账号，赶紧去“添加账号”" />
-        <el-button type="primary" @click="openCreate">添加账号</el-button>
+    <div class="content-split">
+      <div class="content-card list-pane">
+        <div class="pane-header">账号列表</div>
+        <div v-if="accountStore.list.length === 0" class="empty-state">
+          <el-empty description="您还没有账号，赶紧去“添加账号”" />
+          <el-button type="primary" @click="openCreate">添加账号</el-button>
+        </div>
+        <div v-else class="account-table">
+          <el-table :data="filteredAccounts" stripe :virtualized="true">
+            <el-table-column label="平台" prop="platformDisplayName" width="140" />
+            <el-table-column label="账号名称" prop="accountName" min-width="160" />
+            <el-table-column label="状态" prop="status" width="120">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'">
+                  {{ row.status === 'ACTIVE' ? '在线' : '离线' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="最近同步" prop="lastUpdatedAt" width="200">
+              <template #default="{ row }">
+                {{ formatDate(row.lastUpdatedAt) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="260">
+              <template #default="{ row }">
+                <el-button link @click="handleOpenAccount(row)">打开</el-button>
+                <el-button type="primary" link @click="openEdit(row)">编辑</el-button>
+                <el-button link>同步</el-button>
+                <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </div>
-      <div v-else class="account-table">
-        <el-table :data="filteredAccounts" stripe :virtualized="true">
-          <el-table-column label="平台" prop="platformDisplayName" width="140" />
-          <el-table-column label="账号名称" prop="accountName" min-width="160" />
-          <el-table-column label="状态" prop="status" width="120">
-            <template #default="{ row }">
-              <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'">
-                {{ row.status === 'ACTIVE' ? '在线' : '离线' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="最近同步" prop="lastUpdatedAt" width="200">
-            <template #default="{ row }">
-              {{ formatDate(row.lastUpdatedAt) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="220">
-            <template #default="{ row }">
-              <el-button type="primary" link @click="openEdit(row)">编辑</el-button>
-              <el-button link>同步</el-button>
-              <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+
+      <div class="content-card login-pane" v-if="loginPaneVisible">
+        <div class="pane-header flex-between">
+          <div>
+            <strong>登录窗口：</strong>{{ currentLoginPlatform?.displayName || currentLoginPlatform?.name || '未选择' }}
+          </div>
+          <div class="pane-actions">
+            <el-button size="small" @click="openPlatformLogin(currentLoginPlatform, form.accountName)">重新打开私有窗口</el-button>
+          </div>
+        </div>
+        <div class="login-status">{{ loginStatus }}</div>
+        <div class="login-hint">
+          已在新窗口打开平台登录页，完成登录后将自动保存账号并刷新列表。
+        </div>
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑账号' : '添加账号'" width="480px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="平台" prop="platformId">
-          <el-select v-model="form.platformId" placeholder="选择平台">
-            <el-option
-              v-for="platform in accountStore.platforms"
-              :key="platform.id"
-              :label="platform.displayName || platform.name"
-              :value="platform.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="账号名称" prop="accountName">
-          <el-input v-model="form.accountName" placeholder="请输入账号昵称" />
-        </el-form-item>
-        <el-form-item label="凭证信息">
-          <el-input
-            v-model="form.credentials"
-            type="textarea"
-            placeholder="Cookies/Token，实际存储将加密"
-            :rows="3"
-          />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="form.status">
-            <el-option label="在线" value="ACTIVE" />
-            <el-option label="离线" value="INACTIVE" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="dialogLoading" @click="handleSubmit">
-          {{ isEdit ? '保存' : '添加' }}
-        </el-button>
-      </template>
+    <el-dialog v-model="platformPickerVisible" title="选择平台" width="520px">
+        <div class="platform-grid">
+        <div
+          class="platform-card"
+            v-for="platform in availablePlatforms"
+          :key="platform.id"
+          @click="handlePlatformSelect(platform)"
+        >
+          <div class="icon-circle">{{ (platform.displayName || platform.name || '').slice(0, 2) }}</div>
+          <div class="platform-name">{{ platform.displayName || platform.name }}</div>
+        </div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -136,20 +131,37 @@ import {
 import { useAccountStore } from '@/store/modules/account'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useDebounce } from '@/composables/useDebounce'
+import { clientLogger } from '@/services/logger'
+import { resolvePlatformOpenUrl } from '@/services/platformUrl'
 
 const accountStore = useAccountStore()
 const activeTab = ref('accounts')
 const platformFilter = ref('')
 const keyword = ref('')
-const dialogVisible = ref(false)
+const platformPickerVisible = ref(false)
 const dialogLoading = ref(false)
 const formRef = ref(null)
+const partitionKeyRef = ref('')
 const form = reactive({
   id: null,
   platformId: null,
   accountName: '',
   status: 'ACTIVE',
   credentials: ''
+})
+
+const availablePlatforms = computed(() => {
+  return (accountStore.platforms || []).filter(Boolean)
+})
+
+const platformMap = computed(() => {
+  const map = new Map()
+  availablePlatforms.value.forEach((p) => {
+    if (p && p.id) {
+      map.set(p.id, p)
+    }
+  })
+  return map
 })
 
 const rules = {
@@ -195,16 +207,11 @@ const handleMenuSelect = (key) => {
 
 const openCreate = () => {
   resetForm()
-  dialogVisible.value = true
+  platformPickerVisible.value = true
 }
 
-const openEdit = (row) => {
-  form.id = row.id
-  form.platformId = row.platformId
-  form.accountName = row.accountName
-  form.status = row.status
-  form.credentials = ''
-  dialogVisible.value = true
+const selectPlatform = (platform) => {
+  form.platformId = platform.id
 }
 
 const resetForm = () => {
@@ -246,9 +253,110 @@ const handleDelete = (row) => {
   }).then(() => accountStore.deleteAccount(row.id))
 }
 
+const handleOpenAccount = (row) => {
+  const platform = platformMap.value.get(row.platformId)
+  if (!platform) {
+    ElMessage.error('未找到平台信息，无法打开')
+    return
+  }
+  currentLoginPlatform.value = platform
+  form.platformId = row.platformId
+  form.accountName = row.accountName
+  loginPaneVisible.value = true
+  openPlatformLogin(platform, row.accountName || `account-${row.id || ''}`)
+}
+
 const handleSync = () => {
   accountStore.fetchAccounts().then(() => ElMessage.success('同步完成'))
 }
+
+const hasElectronPlatform = () => {
+  if (typeof window === 'undefined') return false
+  if (window.process?.versions?.electron) return true
+  return typeof window.electronAPI?.platform?.openLoginWindow === 'function'
+}
+
+const makePartitionKey = (platformId, accountName) => {
+  const safeName = (accountName || '').trim().replace(/\s+/g, '-')
+  return `platform-${platformId || 'unknown'}-account-${safeName || 'new'}`
+}
+
+const openPlatformLogin = async (platform, accountNameForCache) => {
+  if (!platform || !platform.id) {
+    ElMessage.error('平台信息缺失，请重新选择')
+    return
+  }
+  if (!hasElectronPlatform()) {
+    ElMessage.error('未检测到 Electron 环境或 preload，无法打开登录窗口')
+    return
+  }
+  try {
+    const loginUrl =
+      resolvePlatformOpenUrl(platform) ||
+      'https://passport.weibo.com/sso/signin?entry=account&source=sinareg&url=https%3A%2F%2Flogin.sina.com.cn'
+    partitionKeyRef.value = makePartitionKey(platform.id, accountNameForCache)
+    await window.electronAPI?.platform?.openLoginWindow?.({
+      url: loginUrl,
+      partitionKey: partitionKeyRef.value,
+      successPatterns: ['mp.163.com', '163.com', 'weibo.com', 'login.sina.com.cn'],
+      platformId: platform.id
+    })
+    ElMessage.success('已打开登录窗口，请完成登录后等待自动保存')
+  } catch (error) {
+    clientLogger.report('ERROR', 'platform-login', error?.message, error?.stack)
+    ElMessage.error(error.message || '打开登录窗口失败')
+  }
+}
+
+const handlePlatformSelect = (platform) => {
+  if (!platform || !platform.id) {
+    ElMessage.error('平台信息缺失，请重试')
+    return
+  }
+  selectPlatform(platform)
+  platformPickerVisible.value = false
+  currentLoginPlatform.value = platform
+  if (!form.accountName) {
+    form.accountName = `${platform.displayName || platform.name || '账号'}-已登录`
+  }
+  loginPaneVisible.value = true
+  openPlatformLogin(platform, form.accountName)
+}
+
+const loginPaneVisible = ref(false)
+const currentLoginPlatform = ref(null)
+const loginStatus = ref('等待登录...')
+
+onMounted(() => {
+  if (!hasElectronPlatform()) return
+  const off = window.electronAPI?.platform?.onLoginSuccess?.(async ({ platformId, url }) => {
+    const targetPlatform =
+      availablePlatforms.value.find((p) => p && p.id === platformId) || currentLoginPlatform.value
+    if (targetPlatform) {
+      form.platformId = targetPlatform.id
+      form.accountName = `${targetPlatform.displayName || targetPlatform.name}-已登录`
+      form.status = 'ACTIVE'
+      loginStatus.value = `检测到登录成功：${url}`
+      try {
+        await accountStore.createAccount({
+          platformId: form.platformId,
+          accountName: form.accountName,
+          status: form.status,
+          credentials: form.credentials
+        })
+        ElMessage.success('登录成功，已自动保存账号')
+        loginPaneVisible.value = false
+      } catch (error) {
+        clientLogger.report('ERROR', 'platform-save', error?.message, error?.stack)
+        ElMessage.error(error.message || '保存账号失败')
+      }
+    }
+  })
+  // 可选：返回值用于移除监听
+  if (typeof off === 'function') {
+    onUnmounted(() => off())
+  }
+})
 </script>
 
 <style scoped>
@@ -328,6 +436,139 @@ const handleSync = () => {
 
 .account-table {
   width: 100%;
+}
+
+.content-split {
+  display: grid;
+  grid-template-columns: 0.2fr 0.8fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.pane-header {
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.flex-between {
+  justify-content: space-between;
+}
+
+.pane-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.login-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+}
+
+.login-status {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  color: #606266;
+}
+
+.login-iframe {
+  flex: 1;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.login-iframe iframe {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+}
+
+.dialog-body {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+  min-height: 320px;
+}
+
+.platform-list {
+  border-right: 1px solid #ebeef5;
+  padding-right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.platform-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.platform-item.active {
+  border-color: #409eff;
+  background: #f0f6ff;
+}
+
+.platform-name {
+  font-weight: 600;
+}
+
+.platform-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-hint {
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border: 1px dashed #dcdfe6;
+  color: #606266;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.platform-card {
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.platform-card:hover {
+  border-color: #409eff;
+}
+
+.icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #ecf5ff;
+  color: #409eff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
 }
 </style>
 

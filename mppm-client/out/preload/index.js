@@ -22,7 +22,9 @@ const IPC_CHANNELS = {
   // 系统操作
   SYSTEM_GET_VERSION: "system:getVersion",
   SYSTEM_GET_PLATFORM: "system:getPlatform",
-  SYSTEM_SHOW_NOTIFICATION: "system:showNotification"
+  SYSTEM_SHOW_NOTIFICATION: "system:showNotification",
+  PLATFORM_OPEN_LOGIN_WINDOW: "platform:openLoginWindow",
+  PLATFORM_LOGIN_SUCCESS: "platform:loginSuccess"
 };
 electron.contextBridge.exposeInMainWorld("electronAPI", {
   // 数据库操作
@@ -56,5 +58,13 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
     getVersion: () => electron.ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_VERSION),
     getPlatform: () => electron.ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_PLATFORM),
     showNotification: (options) => electron.ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHOW_NOTIFICATION, options)
+  },
+  platform: {
+    openLoginWindow: (payload) => electron.ipcRenderer.invoke(IPC_CHANNELS.PLATFORM_OPEN_LOGIN_WINDOW, payload),
+    onLoginSuccess: (callback) => {
+      const listener = (_event, data) => callback?.(data);
+      electron.ipcRenderer.on(IPC_CHANNELS.PLATFORM_LOGIN_SUCCESS, listener);
+      return () => electron.ipcRenderer.removeListener(IPC_CHANNELS.PLATFORM_LOGIN_SUCCESS, listener);
+    }
   }
 });

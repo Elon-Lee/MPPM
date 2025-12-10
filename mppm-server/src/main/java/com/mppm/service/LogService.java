@@ -36,7 +36,8 @@ public class LogService {
             Object tree = objectMapper.readTree(raw);
             return objectMapper.writeValueAsString(tree);
         } catch (JsonProcessingException e) {
-            return null;
+            // fallback: wrap as string JSON
+            return "{\"raw\":" + objectMapper.valueToTree(raw) + "}";
         }
     }
 }
