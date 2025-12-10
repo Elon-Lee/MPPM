@@ -12,6 +12,7 @@ const IPC_CHANNELS = {
   DB_CONTENT_FIND_BY_LOCAL_ID: "db:content:findByLocalId",
   DB_CONTENT_FIND_BY_SERVER_ID: "db:content:findByServerId",
   DB_CONTENT_FIND_BY_USER_ID: "db:content:findByUserId",
+  DB_CONTENT_FIND_DIRTY: "db:content:findDirty",
   DB_CONTENT_DELETE: "db:content:delete",
   DB_CONTENT_UPDATE_SYNC_INFO: "db:content:updateSyncInfo",
   // 加密操作
@@ -43,7 +44,8 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
       findByServerId: (serverId) => electron.ipcRenderer.invoke(IPC_CHANNELS.DB_CONTENT_FIND_BY_SERVER_ID, serverId),
       findByUserId: (userId, options) => electron.ipcRenderer.invoke(IPC_CHANNELS.DB_CONTENT_FIND_BY_USER_ID, userId, options),
       delete: (localId) => electron.ipcRenderer.invoke(IPC_CHANNELS.DB_CONTENT_DELETE, localId),
-      updateSyncInfo: (localId, serverId, version, lastSyncAt) => electron.ipcRenderer.invoke(IPC_CHANNELS.DB_CONTENT_UPDATE_SYNC_INFO, localId, serverId, version, lastSyncAt)
+      updateSyncInfo: (localId, serverId, version, lastSyncAt) => electron.ipcRenderer.invoke(IPC_CHANNELS.DB_CONTENT_UPDATE_SYNC_INFO, localId, serverId, version, lastSyncAt),
+      findDirty: (userId) => electron.ipcRenderer.invoke(IPC_CHANNELS.DB_CONTENT_FIND_DIRTY, userId)
     }
   },
   // 加密操作

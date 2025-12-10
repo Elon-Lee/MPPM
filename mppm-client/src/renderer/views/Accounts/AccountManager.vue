@@ -81,21 +81,6 @@
           </el-table>
         </div>
       </div>
-
-      <div class="content-card login-pane" v-if="loginPaneVisible">
-        <div class="pane-header flex-between">
-          <div>
-            <strong>登录窗口：</strong>{{ currentLoginPlatform?.displayName || currentLoginPlatform?.name || '未选择' }}
-          </div>
-          <div class="pane-actions">
-            <el-button size="small" @click="openPlatformLogin(currentLoginPlatform, form.accountName)">重新打开私有窗口</el-button>
-          </div>
-        </div>
-        <div class="login-status">{{ loginStatus }}</div>
-        <div class="login-hint">
-          已在新窗口打开平台登录页，完成登录后将自动保存账号并刷新列表。
-        </div>
-      </div>
     </div>
 
     <el-dialog v-model="platformPickerVisible" title="选择平台" width="520px">
@@ -115,7 +100,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import {
   Monitor,
@@ -135,6 +121,7 @@ import { clientLogger } from '@/services/logger'
 import { resolvePlatformOpenUrl } from '@/services/platformUrl'
 
 const accountStore = useAccountStore()
+const router = useRouter()
 const activeTab = ref('accounts')
 const platformFilter = ref('')
 const keyword = ref('')
@@ -142,6 +129,7 @@ const platformPickerVisible = ref(false)
 const dialogLoading = ref(false)
 const formRef = ref(null)
 const partitionKeyRef = ref('')
+const loginForExistingAccount = ref(false)
 const form = reactive({
   id: null,
   platformId: null,
@@ -159,7 +147,7 @@ const platformMap = computed(() => {
   availablePlatforms.value.forEach((p) => {
     if (p && p.id) {
       map.set(p.id, p)
-    }
+  }
   })
   return map
 })
@@ -202,11 +190,18 @@ const formatDate = (value) => {
 
 const handleMenuSelect = (key) => {
   activeTab.value = key
+  if (key === 'workspace') {
+    router.push('/dashboard')
+  } else if (key === 'accounts') {
+    router.push('/accounts')
+  } else {
   ElMessage.info(`功能「${key}」暂未实现`)
+  }
 }
 
 const openCreate = () => {
   resetForm()
+  loginForExistingAccount.value = false
   platformPickerVisible.value = true
 }
 
@@ -260,10 +255,16 @@ const handleOpenAccount = (row) => {
     return
   }
   currentLoginPlatform.value = platform
+  loginForExistingAccount.value = true
+  form.id = row.id
   form.platformId = row.platformId
   form.accountName = row.accountName
   loginPaneVisible.value = true
-  openPlatformLogin(platform, row.accountName || `account-${row.id || ''}`)
+  openPlatformLogin(platform, {
+    accountId: row.id,
+    createdAt: row.createdAt || row.lastUpdatedAt,
+    accountName: row.accountName
+  })
 }
 
 const handleSync = () => {
@@ -276,12 +277,22 @@ const hasElectronPlatform = () => {
   return typeof window.electronAPI?.platform?.openLoginWindow === 'function'
 }
 
-const makePartitionKey = (platformId, accountName) => {
-  const safeName = (accountName || '').trim().replace(/\s+/g, '-')
-  return `platform-${platformId || 'unknown'}-account-${safeName || 'new'}`
+const formatDateTag = (value) => {
+  const d = value ? new Date(value) : new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}${m}${day}`
 }
 
-const openPlatformLogin = async (platform, accountNameForCache) => {
+const makePartitionKey = (platformName, accountId, createdAt) => {
+  const safePlatform = (platformName || 'platform').trim().replace(/\s+/g, '-')
+  const safeId = accountId ? String(accountId) : 'new'
+  const dateTag = formatDateTag(createdAt)
+  return `${safePlatform}-${safeId}-${dateTag}`
+}
+
+const openPlatformLogin = async (platform, accountMeta = {}) => {
   if (!platform || !platform.id) {
     ElMessage.error('平台信息缺失，请重新选择')
     return
@@ -294,7 +305,8 @@ const openPlatformLogin = async (platform, accountNameForCache) => {
     const loginUrl =
       resolvePlatformOpenUrl(platform) ||
       'https://passport.weibo.com/sso/signin?entry=account&source=sinareg&url=https%3A%2F%2Flogin.sina.com.cn'
-    partitionKeyRef.value = makePartitionKey(platform.id, accountNameForCache)
+    const platformName = platform.displayName || platform.name
+    partitionKeyRef.value = makePartitionKey(platformName, accountMeta.accountId, accountMeta.createdAt)
     await window.electronAPI?.platform?.openLoginWindow?.({
       url: loginUrl,
       partitionKey: partitionKeyRef.value,
@@ -313,6 +325,7 @@ const handlePlatformSelect = (platform) => {
     ElMessage.error('平台信息缺失，请重试')
     return
   }
+  loginForExistingAccount.value = false
   selectPlatform(platform)
   platformPickerVisible.value = false
   currentLoginPlatform.value = platform
@@ -320,7 +333,7 @@ const handlePlatformSelect = (platform) => {
     form.accountName = `${platform.displayName || platform.name || '账号'}-已登录`
   }
   loginPaneVisible.value = true
-  openPlatformLogin(platform, form.accountName)
+  openPlatformLogin(platform, { accountName: form.accountName })
 }
 
 const loginPaneVisible = ref(false)
@@ -338,6 +351,9 @@ onMounted(() => {
       form.status = 'ACTIVE'
       loginStatus.value = `检测到登录成功：${url}`
       try {
+        if (loginForExistingAccount.value && form.id) {
+          ElMessage.success('登录成功')
+        } else {
         await accountStore.createAccount({
           platformId: form.platformId,
           accountName: form.accountName,
@@ -345,6 +361,7 @@ onMounted(() => {
           credentials: form.credentials
         })
         ElMessage.success('登录成功，已自动保存账号')
+        }
         loginPaneVisible.value = false
       } catch (error) {
         clientLogger.report('ERROR', 'platform-save', error?.message, error?.stack)

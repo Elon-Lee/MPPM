@@ -128,6 +128,10 @@ apiClient.interceptors.response.use(
       })
     }
 
+    if (response?.status === 403) {
+      redirectToLogin()
+    }
+
     return Promise.reject(error)
   }
 )

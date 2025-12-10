@@ -1,5 +1,5 @@
 import { app, BrowserWindow, session } from 'electron'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import { is } from '@electron-toolkit/utils'
 
 const windows = new Map()
@@ -7,6 +7,7 @@ const windows = new Map()
 export function openLoginWindow({ url, partitionKey, successPatterns = [], eventSender, platformId }) {
   const key = partitionKey || `platform-login-${Date.now()}`
   const ses = session.fromPartition(`persist:${key}`)
+  const cachePath = resolve(app.getPath('userData'), 'Partitions', `persist:${key}`)
   const initialUrl = url
   let hasNavigatedAway = false
 
@@ -30,6 +31,15 @@ export function openLoginWindow({ url, partitionKey, successPatterns = [], event
     windows.delete(key)
   })
 
+  console.log(
+    `[loginWindow] open login window`,
+    JSON.stringify({
+      platformId,
+      partition: `persist:${key}`,
+      cachePath
+    })
+  )
+
   const isSuccess = (targetUrl) => {
     if (!hasNavigatedAway) {
       return false
@@ -52,9 +62,16 @@ export function openLoginWindow({ url, partitionKey, successPatterns = [], event
       if (eventSender) {
         eventSender.send('platform:loginSuccess', { platformId, url: targetUrl })
       }
-      if (!win.isDestroyed()) {
-        win.close()
-      }
+      // 保留窗口，不自动关闭，方便用户继续操作或确认
+      console.log(
+        `[loginWindow] login success detected`,
+        JSON.stringify({
+          platformId,
+          url: targetUrl,
+          partition: `persist:${key}`,
+          cachePath
+        })
+      )
     }
   })
 

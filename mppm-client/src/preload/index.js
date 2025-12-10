@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       delete: (localId) => ipcRenderer.invoke(IPC_CHANNELS.DB_CONTENT_DELETE, localId),
       updateSyncInfo: (localId, serverId, version, lastSyncAt) =>
         ipcRenderer.invoke(IPC_CHANNELS.DB_CONTENT_UPDATE_SYNC_INFO, localId, serverId, version, lastSyncAt)
+      ,
+      findDirty: (userId) => ipcRenderer.invoke(IPC_CHANNELS.DB_CONTENT_FIND_DIRTY, userId)
     }
   },
 

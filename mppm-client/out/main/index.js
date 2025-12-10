@@ -662,6 +662,7 @@ const windows = /* @__PURE__ */ new Map();
 function openLoginWindow({ url, partitionKey, successPatterns = [], eventSender, platformId }) {
   const key = partitionKey || `platform-login-${Date.now()}`;
   const ses = electron.session.fromPartition(`persist:${key}`);
+  const cachePath = path.resolve(electron.app.getPath("userData"), "Partitions", `persist:${key}`);
   const initialUrl = url;
   let hasNavigatedAway = false;
   const win = new electron.BrowserWindow({
@@ -680,6 +681,14 @@ function openLoginWindow({ url, partitionKey, successPatterns = [], eventSender,
   win.on("closed", () => {
     windows.delete(key);
   });
+  console.log(
+    `[loginWindow] open login window`,
+    JSON.stringify({
+      platformId,
+      partition: `persist:${key}`,
+      cachePath
+    })
+  );
   const isSuccess = (targetUrl) => {
     if (!hasNavigatedAway) {
       return false;
@@ -690,7 +699,7 @@ function openLoginWindow({ url, partitionKey, successPatterns = [], eventSender,
     if (successPatterns && successPatterns.length > 0) {
       return successPatterns.some((p) => targetUrl.includes(p));
     }
-    return !targetUrl.includes("passport.weibo.com");
+    return !targetUrl.includes("passport");
   };
   win.webContents.on("did-navigate", (_event, targetUrl) => {
     if (targetUrl && targetUrl !== initialUrl) {
@@ -700,9 +709,15 @@ function openLoginWindow({ url, partitionKey, successPatterns = [], eventSender,
       if (eventSender) {
         eventSender.send("platform:loginSuccess", { platformId, url: targetUrl });
       }
-      if (!win.isDestroyed()) {
-        win.close();
-      }
+      console.log(
+        `[loginWindow] login success detected`,
+        JSON.stringify({
+          platformId,
+          url: targetUrl,
+          partition: `persist:${key}`,
+          cachePath
+        })
+      );
     }
   });
   win.loadURL(url);
